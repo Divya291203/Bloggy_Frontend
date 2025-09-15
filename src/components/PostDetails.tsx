@@ -1,6 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Calendar, Tag, Clock, Share2, Check } from "lucide-react";
+import {
+	ArrowLeft,
+	Calendar,
+	Tag,
+	Clock,
+	Share2,
+	Check,
+	Sparkles,
+	Loader2,
+} from "lucide-react";
 import axiosInstance from "@/utils/axiosInstance";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -8,8 +17,12 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import dayjs from "dayjs";
-import type { userType } from "@/types/typeDef";
+import type { CommentType, userType } from "@/types/typeDef";
 import { API_PATHS } from "@/utils/apiPaths";
+import PostComments from "./PostComments";
+import Loading from "./Loading";
+import CreateComment from "./CreateComment";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 interface Post {
 	_id: string;
@@ -27,9 +40,32 @@ const PostDetails: React.FC = () => {
 	const { id } = useParams<{ id: string }>();
 	const navigate = useNavigate();
 	const [post, setPost] = useState<Post | null>(null);
+	const [comments, setComments] = useState<CommentType[]>([]);
+	const [loadingComments, setLoadingComments] = useState(true);
+	const [errorComments, setErrorComments] = useState<string | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 	const [copied, setCopied] = useState(false);
+
+	const fetchComments = async () => {
+		if (!id) return;
+
+		try {
+			setLoadingComments(true);
+			setErrorComments(null);
+			const commentsResponse = await axiosInstance.get(
+				`${API_PATHS.COMMENT.GET_POST_COMMENTS(id)}`
+			);
+			setComments(commentsResponse.data.comments);
+		} catch (err: unknown) {
+			console.error("Error fetching comments:", err);
+			setErrorComments(
+				err instanceof Error ? err.message : "Failed to load comments"
+			);
+		} finally {
+			setLoadingComments(false);
+		}
+	};
 
 	useEffect(() => {
 		const fetchPost = async () => {
@@ -48,6 +84,9 @@ const PostDetails: React.FC = () => {
 					`${API_PATHS.POST.GET_ONE_POST(id)}`
 				);
 				setPost(response.data.post);
+
+				// Fetch comments separately
+				await fetchComments();
 			} catch (err: unknown) {
 				console.error("Error fetching post:", err);
 				setError(err instanceof Error ? err.message : "Failed to load article");
@@ -83,6 +122,10 @@ const PostDetails: React.FC = () => {
 		}
 	};
 
+	const [summary, setSummary] = useState<string | null>(null);
+	const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
+	const [summaryError, setSummaryError] = useState<string | null>(null);
+	const [hasGeneratedSummary, setHasGeneratedSummary] = useState(false);
 	// Loading skeleton
 	if (loading) {
 		return (
@@ -197,6 +240,30 @@ const PostDetails: React.FC = () => {
 
 	const readingTime = calculateReadingTime(post.content);
 
+	const handleGenerateSummary = async () => {
+		setIsGeneratingSummary(true);
+		setHasGeneratedSummary(false);
+
+		try {
+			setSummaryError(null);
+			const result = await axiosInstance.post(
+				API_PATHS.AI.GENERATE_BLOG_POST_SUMMARY,
+				{
+					content: post.content,
+				}
+			);
+			setSummary(result.data.summary);
+		} catch (err: unknown) {
+			console.error("Error generating summary:", err);
+			setSummaryError(
+				err instanceof Error ? err.message : "Failed to generate summary"
+			);
+		} finally {
+			setHasGeneratedSummary(true);
+			setIsGeneratingSummary(false);
+		}
+	};
+
 	return (
 		<div className="min-h-screen bg-background text-foreground">
 			<div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -277,7 +344,31 @@ const PostDetails: React.FC = () => {
 									<Share2 className="w-4 h-4 mr-2" />
 									{copied ? <Check className="w-4 h-4" /> : "Share"}
 								</Button>
+
+								{/* Summize Button */}
+								<Button
+									onClick={handleGenerateSummary}
+									className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+								>
+									{isGeneratingSummary ? (
+										<Loader2 className="h-4 w-4 mr-2" />
+									) : (
+										<Sparkles className="h-4 w-4 mr-2" />
+									)}
+									Summize
+								</Button>
 							</div>
+
+							{hasGeneratedSummary && (
+								<Dialog
+									open={hasGeneratedSummary}
+									onOpenChange={setHasGeneratedSummary}
+								>
+									<DialogContent>
+										{summaryError ? <p>{summaryError}</p> : <p>{summary}</p>}
+									</DialogContent>
+								</Dialog>
+							)}
 
 							<Separator />
 
@@ -326,6 +417,45 @@ const PostDetails: React.FC = () => {
 							</div>
 						</CardContent>
 					</Card>
+
+					{/* Comments Section */}
+					<div className="space-y-6">
+						<Separator />
+
+						<div>
+							<h2 className="text-2xl font-bold mb-6">Join the Discussion</h2>
+							<CreateComment
+								postId={id as string}
+								onCommentAdded={fetchComments}
+							/>
+						</div>
+
+						{loadingComments && <Loading message="Loading comments..." />}
+						{errorComments && (
+							<Card className="border-destructive">
+								<CardContent className="pt-6">
+									<div className="text-center text-destructive">
+										<p>{errorComments}</p>
+										<Button
+											variant="outline"
+											size="sm"
+											className="mt-4"
+											onClick={fetchComments}
+										>
+											Try Again
+										</Button>
+									</div>
+								</CardContent>
+							</Card>
+						)}
+
+						{!loadingComments && !errorComments && (
+							<PostComments
+								comments={comments}
+								onCommentUpdate={fetchComments}
+							/>
+						)}
+					</div>
 				</div>
 			</div>
 		</div>
