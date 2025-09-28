@@ -1,7 +1,15 @@
 import React from "react";
-import { ArrowRight } from "lucide-react";
+import {
+	ArrowRight,
+	Clock,
+	Eye,
+	Heart,
+	MessageCircle,
+	Calendar,
+} from "lucide-react";
 import type { userType } from "@/types/typeDef";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import dayjs from "dayjs";
 import { Link } from "react-router-dom";
 import { API_PATHS } from "@/utils/apiPaths";
@@ -15,6 +23,9 @@ interface Post {
 	category: string;
 	slug: string;
 	createdAt: string;
+	views?: number;
+	likes?: number;
+	comments?: number;
 }
 
 type PostCardProps = {
@@ -23,84 +34,151 @@ type PostCardProps = {
 };
 
 const PostCard: React.FC<PostCardProps> = ({ post, type = "normal" }) => {
-	const isFeatured =
-		type === "normal"
-			? "border-none bg-background"
-			: "border-border/50 bg-card dark:bg-gray-900 hover:border-primary transition-colors duration-200 shadow-md";
+	// Calculate estimated read time
+	const wordCount = post.content.split(" ").length;
+	const readTime = Math.max(1, Math.ceil(wordCount / 200));
+
+	// Get category color
+	const getCategoryColor = (category: string) => {
+		const colors = {
+			technology:
+				"bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400",
+			development:
+				"bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400",
+			design:
+				"bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400",
+			business:
+				"bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400",
+			lifestyle:
+				"bg-pink-100 text-pink-800 dark:bg-pink-900/20 dark:text-pink-400",
+			default:
+				"bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400",
+		};
+		return (
+			colors[category.toLowerCase() as keyof typeof colors] || colors.default
+		);
+	};
+
+	const baseClasses =
+		"group relative overflow-hidden rounded-2xl border transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 cursor-pointer";
+	const typeClasses =
+		type === "featured"
+			? "bg-gradient-to-br from-card via-card to-card/80 border-border/50 hover:border-primary/40 shadow-lg hover:shadow-primary/20"
+			: "bg-card border-border/30 hover:border-primary/30 shadow-md hover:shadow-lg";
+
 	return (
-		<Link to={API_PATHS.POST.GET_ONE_POST(post._id)}>
-			<div
-				className={`${isFeatured} shadow-xl rounded-xl overflow-hidden border w-full max-w-sm h-[450px] flex flex-col cursor-pointer mx-auto`}
+		<Link to={API_PATHS.POST.GET_ONE_POST(post._id)} className="block">
+			<article
+				className={`${baseClasses} ${typeClasses} w-full max-w-sm h-[480px] flex flex-col mx-auto`}
 			>
+				{/* Image Section with Overlay */}
 				{post.image && (
-					<div className="w-full h-48 overflow-hidden">
+					<div className="relative w-full h-48 overflow-hidden">
 						<img
 							src={post.image}
 							alt={post.title}
-							className="w-full h-full object-cover"
+							className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
 						/>
+						{/* Gradient overlay */}
+						<div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+						{/* Category badge on image */}
+						<div className="absolute top-3 left-3">
+							<Badge
+								variant="secondary"
+								className={`${getCategoryColor(
+									post.category
+								)} border-0 shadow-lg backdrop-blur-sm`}
+							>
+								{post.category}
+							</Badge>
+						</div>
+
+						{/* Read time badge */}
+						<div className="absolute top-3 right-3">
+							<Badge
+								variant="outline"
+								className="bg-white/90 dark:bg-black/80 text-xs border-0 shadow-lg backdrop-blur-sm"
+							>
+								<Clock className="h-3 w-3 mr-1" />
+								{readTime} min
+							</Badge>
+						</div>
 					</div>
 				)}
 
 				{/* Content Section */}
-				<div className="flex flex-col flex-1 p-6">
-					{/* Category Badge */}
-					<div className="flex items-center gap-2 mb-4 justify-between">
-						<div className="flex items-center gap-2">
-							<Avatar className="w-6 h-6">
-								<AvatarImage src={post.userId.avatar} />
-								<AvatarFallback>{post.userId.name.charAt(0)}</AvatarFallback>
-							</Avatar>
-							<span className="text-primary text-sm font-medium">
+				<div className="flex flex-col flex-1 p-6 space-y-4">
+					{/* Author Info */}
+					<div className="flex items-center gap-3">
+						<Avatar className="w-8 h-8 ring-2 ring-primary/20 transition-all group-hover:ring-primary/40">
+							<AvatarImage src={post.userId.avatar} />
+							<AvatarFallback className="text-xs font-semibold bg-gradient-to-br from-primary/20 to-primary/10">
+								{post.userId.name.charAt(0)}
+							</AvatarFallback>
+						</Avatar>
+						<div className="flex-1 min-w-0">
+							<p className="text-sm font-medium text-foreground truncate">
 								{post.userId.name}
-							</span>
+							</p>
+							<div className="flex items-center gap-1 text-xs text-muted-foreground">
+								<Calendar className="h-3 w-3" />
+								{dayjs(post.createdAt).format("MMM DD, YYYY")}
+							</div>
 						</div>
-						<span className="text-primary text-sm font-medium">
-							{post.category}
-						</span>
 					</div>
 
 					{/* Title and Content */}
 					<div className="flex-1 flex flex-col gap-3">
-						<h2
-							className={`text-xl font-bold leading-tight transition-colors duration-200 ${
-								type === "normal"
-									? "text-foreground hover:text-purple-600 dark:hover:text-purple-400"
-									: "text-foreground hover:text-purple-600 dark:text-white dark:hover:text-purple-400"
-							}`}
-						>
+						<h2 className="text-lg font-bold leading-tight text-foreground group-hover:text-primary transition-colors duration-200 line-clamp-2">
 							{post.title}
 						</h2>
-						<p className="text-muted-foreground text-sm leading-relaxed">
-							{post.content.slice(0, 120)}...
+						<p className="text-muted-foreground text-sm leading-relaxed line-clamp-3">
+							{post.content.replace(/<[^>]*>/g, "").slice(0, 150)}...
 						</p>
 					</div>
 
-					{/* Footer */}
-					<div className="flex items-center justify-between mt-6 pt-4 border-t border-border/50 dark:border-gray-700">
-						<div className="flex items-center gap-2 justify-center">
-							<svg
-								className="w-4 h-4 text-muted-foreground"
-								fill="currentColor"
-								viewBox="0 0 20 20"
-							>
-								<path
-									fillRule="evenodd"
-									d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"
-									clipRule="evenodd"
-								/>
-							</svg>
-							<span className="text-muted-foreground text-sm">
-								{dayjs(post.createdAt).format("MMM DD, YYYY")}
-							</span>
+					{/* Stats Row */}
+					{(post.views || post.likes || post.comments) && (
+						<div className="flex items-center gap-4 text-xs text-muted-foreground">
+							{post.views && (
+								<div className="flex items-center gap-1">
+									<Eye className="h-3 w-3" />
+									<span>{post.views.toLocaleString()}</span>
+								</div>
+							)}
+							{post.likes && (
+								<div className="flex items-center gap-1">
+									<Heart className="h-3 w-3" />
+									<span>{post.likes}</span>
+								</div>
+							)}
+							{post.comments && (
+								<div className="flex items-center gap-1">
+									<MessageCircle className="h-3 w-3" />
+									<span>{post.comments}</span>
+								</div>
+							)}
 						</div>
-						<button className="flex items-center gap-1 text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300 transition-colors text-sm font-medium">
-							Read more
-							<ArrowRight className="w-4 h-4" />
-						</button>
+					)}
+
+					{/* Read More Button */}
+					<div className="pt-2 border-t border-border/50">
+						<div className="flex items-center justify-between">
+							<div className="flex items-center gap-1 text-primary font-medium text-sm group-hover:text-primary/80 transition-colors">
+								<span>Read article</span>
+								<ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+							</div>
+							<div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 group-hover:bg-primary/20">
+								<ArrowRight className="h-4 w-4 text-primary" />
+							</div>
+						</div>
 					</div>
 				</div>
-			</div>
+
+				{/* Hover effect overlay */}
+				<div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+			</article>
 		</Link>
 	);
 };

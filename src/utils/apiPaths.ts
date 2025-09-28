@@ -41,13 +41,18 @@ export const API_PATHS = {
 		GET_TOTAL_POSTS: "/stats/total-posts", //get total posts
 		GET_TOTAL_USERS: "/stats/total-users", //get total users
 		GET_TOTAL_COMMENTS: "/stats/total-comments", //get total comments
-		GET_RECENT_ACTIVITIES: "/stats/recent-activities", //get recent activities
-		GET_PUBLISHED_TODAY: "/stats/published-today", //get published today
-
+		GET_TODAYS_STATS: "/stats/todays-stats", //get published today
+		GET_WEEKLY_STATS: "/stats/weekly-stats", //get weekly stats
+		GET_MONTHLY_STATS: "/stats/monthly-stats", //get monthly stats
 		//Author Stats
 		GET_TOTAL_AUTHOR_POSTS: "/stats/author-total-posts", //get total posts
 
 		//Topic Stats
 		GET_CATEGORY_STATS: "/stats/category-stats", //get category stats
+	},
+	AI: {
+		GENERATE_BLOG_POST: "/ai/generate-blog-post", //generate a blog post
+		GENERATE_BLOG_POST_IDEAS: "/ai/generate-blog-post-ideas", //generate blog post ideas
+		GENERATE_BLOG_POST_SUMMARY: "/ai/generate-blog-post-summary", //generate blog post summary
 	},
 };

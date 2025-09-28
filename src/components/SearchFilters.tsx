@@ -44,7 +44,7 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
 		{ value: "newest", label: "Newest First" },
 		{ value: "oldest", label: "Oldest First" },
 		{ value: "title", label: "Title A-Z" },
-		{ value: "popular", label: "Most Popular" },
+		{ value: "views", label: "Most Views" },
 	];
 
 	// Debounce search input

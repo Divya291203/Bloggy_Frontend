@@ -17,6 +17,8 @@ import FooterLayout from "./components/Layout/FooterLayout";
 import PostDetails from "./components/PostDetails";
 import CreatePost from "./components/CreatePost";
 
+
+
 function App() {
 	return (
 		<Router>

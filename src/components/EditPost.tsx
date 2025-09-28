@@ -139,7 +139,6 @@ const EditPost: React.FC<EditPostProps> = ({ className, initialPostId }) => {
 				image: postImageUrl,
 				isDraft,
 			});
-
 			// Update the selected post with new data
 			const updatedPost = {
 				...selectedPost,

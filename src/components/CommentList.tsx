@@ -26,7 +26,7 @@ const CommentList: React.FC<CommentListProps> = ({ className }) => {
 				const response = await axiosInstance.get(
 					API_PATHS.COMMENT.GET_ALL_COMMENTS
 				);
-				setComments(response.data.comment);
+				setComments(response.data.comments);
 				setError(null);
 			} catch (error) {
 				setError(error as string);
@@ -168,10 +168,12 @@ const CommentList: React.FC<CommentListProps> = ({ className }) => {
 	return (
 		<div className={cn("flex flex-1 flex-col gap-6 p-6", className)}>
 			<div className="flex items-center justify-between">
-				<h1 className="text-2xl font-bold">All Comments ({comments.length})</h1>
+				<h1 className="text-2xl font-bold">
+					All Comments ({comments?.length})
+				</h1>
 			</div>
 
-			{comments.length === 0 ? (
+			{comments?.length === 0 ? (
 				<Card>
 					<CardContent className="pt-6">
 						<div className="text-center text-muted-foreground">
@@ -183,7 +185,7 @@ const CommentList: React.FC<CommentListProps> = ({ className }) => {
 				</Card>
 			) : (
 				<div className="grid gap-4">
-					{comments.map((comment) => (
+					{comments?.map((comment) => (
 						<CommentCard key={comment._id} comment={comment} />
 					))}
 				</div>

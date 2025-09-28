@@ -6,17 +6,21 @@ import {
 	Eye,
 	MessageSquare,
 	TrendingUp,
-	Activity,
+	// Activity,
 	AlertCircle,
 	CheckCircle,
 	Clock,
 	Loader2,
+	Calendar,
+	BarChart3,
+	Tag,
 } from "lucide-react";
 import { API_PATHS } from "@/utils/apiPaths";
 import axiosInstance from "@/utils/axiosInstance";
 
 interface AdminDashboardViewProps {
 	user?: { name?: string };
+	setActiveView: (view: string) => void;
 }
 
 type Stats = {
@@ -24,55 +28,132 @@ type Stats = {
 	totalPublishedPosts: number;
 	totalDrafts: number;
 	totalUsers: number;
-	totalViews?: number;
-	totalComments?: number;
-	pendingPosts?: number;
-	publishedToday?: number;
+	totalViews: number;
+	totalComments: number;
+	todaysStats: {
+		publishedPostToday: number;
+		totalDraftsToday: number;
+		totalUsersCreatedToday: number;
+		totalViewsToday: number;
+	};
+	weeklyStats: {
+		publishedPostWeekly: number;
+		totalDraftsWeekly: number;
+		totalUsersCreatedWeekly: number;
+		totalViewsWeekly: number;
+	};
+	monthlyStats: {
+		publishedPostMonthly: number;
+		totalDraftsMonthly: number;
+		totalUsersCreatedMonthly: number;
+		totalViewsMonthly: number;
+	};
+	categoryStats: {
+		category: string;
+		count: number;
+	}[];
 };
-const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) => {
+
+type TimePeriod = "today" | "weekly" | "monthly";
+const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
+	user,
+	setActiveView,
+}) => {
 	const { adminColors } = useTheme();
 	const [loading, setLoading] = useState<boolean>(false);
 	const [error, setError] = useState<Error | null>(null);
 
-	// Mock data - replace with real API calls
 	const [stats, setStats] = useState<Stats>({
 		totalPosts: 0,
+		totalViews: 0,
 		totalPublishedPosts: 0,
 		totalDrafts: 0,
 		totalUsers: 0,
-		totalViews: 0,
 		totalComments: 0,
-		pendingPosts: 0,
-		publishedToday: 0,
+		todaysStats: {
+			publishedPostToday: 0,
+			totalDraftsToday: 0,
+			totalUsersCreatedToday: 0,
+			totalViewsToday: 0,
+		},
+		weeklyStats: {
+			publishedPostWeekly: 0,
+			totalDraftsWeekly: 0,
+			totalUsersCreatedWeekly: 0,
+			totalViewsWeekly: 0,
+		},
+		monthlyStats: {
+			publishedPostMonthly: 0,
+			totalDraftsMonthly: 0,
+			totalUsersCreatedMonthly: 0,
+			totalViewsMonthly: 0,
+		},
+		categoryStats: [],
 	});
+
+	const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>("today");
 
 	useEffect(() => {
 		const fetchStats = async () => {
 			try {
 				setLoading(true);
-				const responsePosts = await axiosInstance.get(
-					API_PATHS.STATS.GET_TOTAL_POSTS
-				);
-				const responseUsers = await axiosInstance.get(
-					API_PATHS.STATS.GET_TOTAL_USERS
-				);
-				const responseComments = await axiosInstance.get(
-					API_PATHS.STATS.GET_TOTAL_COMMENTS
-				);
-				const responsePublishedToday = await axiosInstance.get(
-					API_PATHS.STATS.GET_PUBLISHED_TODAY
-				);
-				setStats((prev) => ({
-					...prev,
+				const [
+					responsePosts,
+					responseUsers,
+					responseComments,
+					responseTodaysStats,
+					responseWeeklyStats,
+					responseMonthlyStats,
+					responseCategoryStats,
+				] = await Promise.all([
+					axiosInstance.get(API_PATHS.STATS.GET_TOTAL_POSTS),
+					axiosInstance.get(API_PATHS.STATS.GET_TOTAL_USERS),
+					axiosInstance.get(API_PATHS.STATS.GET_TOTAL_COMMENTS),
+					axiosInstance.get(API_PATHS.STATS.GET_TODAYS_STATS),
+					axiosInstance.get(API_PATHS.STATS.GET_WEEKLY_STATS),
+					axiosInstance.get(API_PATHS.STATS.GET_MONTHLY_STATS),
+					axiosInstance.get(API_PATHS.STATS.GET_CATEGORY_STATS),
+				]);
+
+				// Extract totalViews correctly from aggregation result
+				const totalViews = responsePosts.data.totalViews;
+
+				// Extract time-based views correctly
+				const totalViewsToday = responseTodaysStats.data.totalViewsToday;
+				const totalViewsWeekly = responseWeeklyStats.data.totalViewsWeekly;
+				const totalViewsMonthly = responseMonthlyStats.data.totalViewsMonthly;
+
+				setStats({
 					totalPosts: responsePosts.data.totalPosts,
 					totalPublishedPosts: responsePosts.data.totalPublishedPosts,
 					totalDrafts: responsePosts.data.totalDrafts,
 					totalUsers: responseUsers.data.totalUsers,
 					totalComments: responseComments.data.totalComments,
-					publishedToday: responsePublishedToday.data.publishedToday,
-					totalViews: 0, // Set default value since it's not from API
-					pendingPosts: 0, // Set default value since it's not from API
-				}));
+					totalViews,
+					todaysStats: {
+						publishedPostToday: responseTodaysStats.data.publishedPostToday,
+						totalDraftsToday: responseTodaysStats.data.totalDraftsToday,
+						totalUsersCreatedToday:
+							responseTodaysStats.data.totalUsersCreatedToday,
+						totalViewsToday,
+					},
+					weeklyStats: {
+						publishedPostWeekly: responseWeeklyStats.data.publishedPostWeekly,
+						totalDraftsWeekly: responseWeeklyStats.data.totalDraftsWeekly,
+						totalUsersCreatedWeekly:
+							responseWeeklyStats.data.totalUsersCreatedWeekly,
+						totalViewsWeekly,
+					},
+					monthlyStats: {
+						publishedPostMonthly:
+							responseMonthlyStats.data.publishedPostMonthly,
+						totalDraftsMonthly: responseMonthlyStats.data.totalDraftsMonthly,
+						totalUsersCreatedMonthly:
+							responseMonthlyStats.data.totalUsersCreatedMonthly,
+						totalViewsMonthly,
+					},
+					categoryStats: responseCategoryStats.data.categoryStats,
+				});
 			} catch (error) {
 				setError(error as Error);
 			} finally {
@@ -84,8 +165,60 @@ const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) => {
 
 	// Get theme-aware colors
 	const colors = adminColors;
-	console.log(stats);
 
+	// Helper functions to get current period stats safely
+	const getCurrentPeriodPublished = () => {
+		switch (selectedPeriod) {
+			case "today":
+				return stats.todaysStats.publishedPostToday;
+			case "weekly":
+				return stats.weeklyStats.publishedPostWeekly;
+			case "monthly":
+				return stats.monthlyStats.publishedPostMonthly;
+			default:
+				return stats.todaysStats.publishedPostToday;
+		}
+	};
+
+	const getCurrentPeriodDrafts = () => {
+		switch (selectedPeriod) {
+			case "today":
+				return stats.todaysStats.totalDraftsToday;
+			case "weekly":
+				return stats.weeklyStats.totalDraftsWeekly;
+			case "monthly":
+				return stats.monthlyStats.totalDraftsMonthly;
+			default:
+				return stats.todaysStats.totalDraftsToday;
+		}
+	};
+
+	const getCurrentPeriodUsers = () => {
+		switch (selectedPeriod) {
+			case "today":
+				return stats.todaysStats.totalUsersCreatedToday;
+			case "weekly":
+				return stats.weeklyStats.totalUsersCreatedWeekly;
+			case "monthly":
+				return stats.monthlyStats.totalUsersCreatedMonthly;
+			default:
+				return stats.todaysStats.totalUsersCreatedToday;
+		}
+	};
+	// Helper function to format period display
+	const getPeriodDisplay = () => {
+		switch (selectedPeriod) {
+			case "today":
+				return "Today";
+			case "weekly":
+				return "This Week";
+			case "monthly":
+				return "This Month";
+			default:
+				return "Today";
+		}
+	};
+	const [catagoryAll, setCatagoryAll] = useState<boolean>(false);
 	return (
 		<div className="flex flex-1 flex-col gap-6 p-6">
 			{loading && (
@@ -104,96 +237,260 @@ const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) => {
 					<h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
 					<p className="text-muted-foreground">
 						Welcome back, {user?.name || "Admin"}! Here's what's happening with
-						your platform today.
+						your platform.
 					</p>
+				</div>
+				<div className="flex items-center gap-2">
+					<Calendar className="h-5 w-5 text-muted-foreground" />
+					<select
+						value={selectedPeriod}
+						onChange={(e) => setSelectedPeriod(e.target.value as TimePeriod)}
+						className="rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+					>
+						<option value="today">Today</option>
+						<option value="weekly">This Week</option>
+						<option value="monthly">This Month</option>
+					</select>
 				</div>
 			</div>
 
 			{/* Key Metrics */}
-			<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-				<div className="rounded-lg border bg-card p-6 shadow-sm">
+			<div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+				<div className="group relative overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-br from-card to-card/80 p-6 shadow-lg transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 hover:border-primary/30">
 					<div className="flex items-center justify-between">
-						<div>
+						<div className="space-y-3">
 							<p className="text-sm font-medium text-muted-foreground">
 								Total Posts
 							</p>
-							<p className="text-2xl font-bold">{stats.totalPosts}</p>
-							<p className="text-xs text-green-600 flex items-center gap-1">
-								<TrendingUp className="h-3 w-3" />
-								+12% from last month
+							<p className="text-3xl font-bold text-foreground">
+								{stats.totalPosts?.toLocaleString()}
 							</p>
+							<div className="flex items-center gap-2">
+								<div className="flex items-center gap-1 text-xs text-green-600 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-full">
+									<TrendingUp className="h-3 w-3" />
+									+12%
+								</div>
+								<span className="text-xs text-muted-foreground">
+									from last month
+								</span>
+							</div>
 						</div>
-						<div
-							className="h-8 w-8 rounded-lg flex items-center justify-center"
-							style={{ backgroundColor: colors.stats.posts }}
-						>
-							<FileText className="h-5 w-5 text-white" />
+						<div className="relative">
+							<div
+								className="h-12 w-12 rounded-2xl flex items-center justify-center shadow-lg transition-transform group-hover:scale-110"
+								style={{ backgroundColor: colors.stats.posts }}
+							>
+								<FileText className="h-6 w-6 text-white" />
+							</div>
+							<div className="absolute -top-1 -right-1 h-4 w-4 bg-green-500 rounded-full animate-pulse" />
 						</div>
 					</div>
+					<div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 				</div>
 
-				<div className="rounded-lg border bg-card p-6 shadow-sm">
+				<div className="group relative overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-br from-card to-card/80 p-6 shadow-lg transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 hover:border-primary/30">
 					<div className="flex items-center justify-between">
-						<div>
+						<div className="space-y-3">
 							<p className="text-sm font-medium text-muted-foreground">
 								Total Users
 							</p>
-							<p className="text-2xl font-bold">{stats.totalUsers}</p>
-							<p className="text-xs text-green-600 flex items-center gap-1">
-								<TrendingUp className="h-3 w-3" />
-								+8% from last month
+							<p className="text-3xl font-bold text-foreground">
+								{stats.totalUsers?.toLocaleString()}
 							</p>
+							<div className="flex items-center gap-2">
+								<div className="flex items-center gap-1 text-xs text-green-600 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-full">
+									<TrendingUp className="h-3 w-3" />
+									+8%
+								</div>
+								<span className="text-xs text-muted-foreground">
+									from last month
+								</span>
+							</div>
 						</div>
-						<div
-							className="h-8 w-8 rounded-lg flex items-center justify-center"
-							style={{ backgroundColor: colors.stats.users }}
-						>
-							<Users className="h-5 w-5 text-white" />
+						<div className="relative">
+							<div
+								className="h-12 w-12 rounded-2xl flex items-center justify-center shadow-lg transition-transform group-hover:scale-110"
+								style={{ backgroundColor: colors.stats.users }}
+							>
+								<Users className="h-6 w-6 text-white" />
+							</div>
+							<div className="absolute -top-1 -right-1 h-4 w-4 bg-blue-500 rounded-full animate-pulse" />
 						</div>
 					</div>
+					<div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 				</div>
 
-				<div className="rounded-lg border bg-card p-6 shadow-sm">
+				<div className="group relative overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-br from-card to-card/80 p-6 shadow-lg transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 hover:border-primary/30">
 					<div className="flex items-center justify-between">
-						<div>
+						<div className="space-y-3">
 							<p className="text-sm font-medium text-muted-foreground">
 								Total Views
 							</p>
-							<p className="text-2xl font-bold">{stats.totalViews}</p>
-							<p className="text-xs text-green-600 flex items-center gap-1">
-								<TrendingUp className="h-3 w-3" />
-								+23% from last month
+							<p className="text-3xl font-bold text-foreground">
+								{stats.totalViews?.toLocaleString()}
 							</p>
+							<div className="flex items-center gap-2">
+								<div className="flex items-center gap-1 text-xs text-orange-600 bg-orange-50 dark:bg-orange-900/20 px-2 py-1 rounded-full">
+									<Eye className="h-3 w-3" />
+									Live
+								</div>
+								<span className="text-xs text-muted-foreground">
+									real-time data
+								</span>
+							</div>
 						</div>
-						<div
-							className="h-8 w-8 rounded-lg flex items-center justify-center"
-							style={{ backgroundColor: colors.stats.views }}
-						>
-							<Eye className="h-5 w-5 text-white" />
+						<div className="relative">
+							<div
+								className="h-12 w-12 rounded-2xl flex items-center justify-center shadow-lg transition-transform group-hover:scale-110"
+								style={{ backgroundColor: colors.stats.views }}
+							>
+								<Eye className="h-6 w-6 text-white" />
+							</div>
+							<div className="absolute -top-1 -right-1 h-4 w-4 bg-orange-500 rounded-full animate-pulse" />
 						</div>
 					</div>
+					<div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 				</div>
 
-				<div className="rounded-lg border bg-card p-6 shadow-sm">
+				<div className="group relative overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-br from-card to-card/80 p-6 shadow-lg transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 hover:border-primary/30">
 					<div className="flex items-center justify-between">
-						<div>
+						<div className="space-y-3">
 							<p className="text-sm font-medium text-muted-foreground">
-								Comments
+								Total Comments
 							</p>
-							<p className="text-2xl font-bold">{stats.totalComments}</p>
-							<p className="text-xs text-green-600 flex items-center gap-1">
-								<TrendingUp className="h-3 w-3" />
-								+5% from last month
+							<p className="text-3xl font-bold text-foreground">
+								{stats.totalComments?.toLocaleString()}
 							</p>
+							<div className="flex items-center gap-2">
+								<div className="flex items-center gap-1 text-xs text-purple-600 bg-purple-50 dark:bg-purple-900/20 px-2 py-1 rounded-full">
+									<MessageSquare className="h-3 w-3" />
+									Active
+								</div>
+								<span className="text-xs text-muted-foreground">
+									engagement
+								</span>
+							</div>
 						</div>
-						<div
-							className="h-8 w-8 rounded-lg flex items-center justify-center"
-							style={{ backgroundColor: colors.stats.comments }}
-						>
-							<MessageSquare className="h-5 w-5 text-white" />
+						<div className="relative">
+							<div
+								className="h-12 w-12 rounded-2xl flex items-center justify-center shadow-lg transition-transform group-hover:scale-110"
+								style={{ backgroundColor: colors.stats.comments }}
+							>
+								<MessageSquare className="h-6 w-6 text-white" />
+							</div>
+							<div className="absolute -top-1 -right-1 h-4 w-4 bg-purple-500 rounded-full animate-pulse" />
 						</div>
 					</div>
+					<div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 				</div>
+			</div>
+
+			{/* Time Period Stats */}
+			<div className="rounded-lg border bg-card p-6 shadow-sm">
+				<div className="flex items-center justify-between mb-6">
+					<h3 className="text-lg font-semibold">
+						{getPeriodDisplay()} Statistics
+					</h3>
+					<BarChart3 className="h-5 w-5 text-muted-foreground" />
+				</div>
+				<div className="grid gap-3 md:grid-cols-3">
+					<div className="text-center">
+						<div className="flex items-center justify-center mb-2">
+							<div
+								className="rounded-full p-2"
+								style={{ backgroundColor: `${colors.status.approved}20` }}
+							>
+								<CheckCircle
+									className="h-5 w-5"
+									style={{ color: colors.status.approved }}
+								/>
+							</div>
+						</div>
+						<p className="text-2xl font-bold">{getCurrentPeriodPublished()}</p>
+						<p className="text-sm text-muted-foreground">Published Posts</p>
+					</div>
+
+					<div className="text-center">
+						<div className="flex items-center justify-center mb-2">
+							<div
+								className="rounded-full p-2"
+								style={{ backgroundColor: `${colors.status.pending}20` }}
+							>
+								<Clock
+									className="h-5 w-5"
+									style={{ color: colors.status.pending }}
+								/>
+							</div>
+						</div>
+						<p className="text-2xl font-bold">{getCurrentPeriodDrafts()}</p>
+						<p className="text-sm text-muted-foreground">Drafts Created</p>
+					</div>
+
+					<div className="text-center">
+						<div className="flex items-center justify-center mb-2">
+							<div
+								className="rounded-full p-2"
+								style={{ backgroundColor: `${colors.stats.users}20` }}
+							>
+								<Users
+									className="h-5 w-5"
+									style={{ color: colors.stats.users }}
+								/>
+							</div>
+						</div>
+						<p className="text-2xl font-bold">{getCurrentPeriodUsers()}</p>
+						<p className="text-sm text-muted-foreground">New Users</p>
+					</div>
+				</div>
+			</div>
+
+			{/* Category Statistics */}
+			<div className="rounded-lg border bg-card p-6 shadow-sm">
+				<div className="flex items-center justify-between mb-6">
+					<h3 className="text-lg font-semibold">Content Categories</h3>
+					<Tag className="h-5 w-5 text-muted-foreground" />
+				</div>
+				<div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+					{stats.categoryStats
+						.sort((a, b) => b.count - a.count)
+						.slice(0, catagoryAll ? stats.categoryStats.length : 9)
+						.map((category) => (
+							<div
+								key={category.category}
+								className="flex items-center justify-between p-3 rounded-md bg-muted/50 hover:bg-muted/80 transition-colors"
+							>
+								<div className="flex items-center gap-2">
+									<div className="h-2 w-2 rounded-full bg-primary" />
+									<span className="text-sm font-medium">
+										{category.category}
+									</span>
+								</div>
+								<span className="text-sm font-bold text-primary">
+									{category.count}
+								</span>
+							</div>
+						))}
+				</div>
+				{stats.categoryStats.length > 9 && !catagoryAll && (
+					<div className="mt-4 text-center">
+						<button
+							className="text-sm text-primary hover:text-primary/80 transition-colors"
+							onClick={() => setCatagoryAll(true)}
+						>
+							View All Categories ({stats.categoryStats.length})
+						</button>
+					</div>
+				)}
+				{catagoryAll && (
+					<div className="mt-4 text-center">
+						<button
+							className="text-sm text-primary hover:text-primary/80 transition-colors"
+							onClick={() => setCatagoryAll(false)}
+						>
+							View Less Categories
+						</button>
+					</div>
+				)}
 			</div>
 
 			{/* Quick Actions */}
@@ -210,17 +507,18 @@ const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) => {
 							/>
 						</div>
 						<div>
-							<p className="font-semibold">Pending Reviews</p>
+							<p className="font-semibold">Draft Posts</p>
 							<p className="text-sm text-muted-foreground">
-								{stats.totalDrafts} posts awaiting approval
+								{stats.totalDrafts} posts need review
 							</p>
 						</div>
 					</div>
 					<button
 						className="mt-4 w-full rounded-md px-3 py-2 text-sm font-medium text-white transition-colors hover:opacity-90"
 						style={{ backgroundColor: colors.status.pending }}
+						onClick={() => setActiveView("Drafts")}
 					>
-						Review Posts
+						Review Drafts
 					</button>
 				</div>
 
@@ -228,29 +526,30 @@ const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) => {
 					<div className="flex items-center gap-3">
 						<div
 							className="rounded-full p-2"
-							style={{ backgroundColor: `${colors.status.approved}20` }}
+							style={{ backgroundColor: `${colors.stats.users}20` }}
 						>
-							<CheckCircle
+							<Users
 								className="h-5 w-5"
-								style={{ color: colors.status.approved }}
+								style={{ color: colors.stats.users }}
 							/>
 						</div>
 						<div>
-							<p className="font-semibold">Published Today</p>
+							<p className="font-semibold">User Management</p>
 							<p className="text-sm text-muted-foreground">
-								{stats.publishedToday} new posts went live
+								Manage {stats.totalUsers} users
 							</p>
 						</div>
 					</div>
 					<button
 						className="mt-4 w-full rounded-md px-3 py-2 text-sm font-medium text-white transition-colors hover:opacity-90"
-						style={{ backgroundColor: colors.status.approved }}
+						style={{ backgroundColor: colors.stats.users }}
+						onClick={() => setActiveView("Users")}
 					>
-						View Posts
+						Manage Users
 					</button>
 				</div>
 
-				<div className="rounded-lg border bg-card p-6 shadow-sm">
+				{/* <div className="rounded-lg border bg-card p-6 shadow-sm">
 					<div className="flex items-center gap-3">
 						<div className="rounded-full bg-blue-100 p-2">
 							<Activity className="h-5 w-5 text-blue-600" />
@@ -262,84 +561,12 @@ const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) => {
 							</p>
 						</div>
 					</div>
-					<button className="mt-4 w-full rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors">
+					<button
+						className="mt-4 w-full rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
+						onClick={() => setActiveView("System Health")}
+					>
 						View Details
 					</button>
-				</div>
-			</div>
-
-			{/* Charts and Recent Activity */}
-			{/* TODO: Charts and Recent Activity */}
-			<div className="grid gap-6 lg:grid-cols-2">
-				{/* Chart Placeholder */}
-				{/* <div className="rounded-lg border bg-card p-6 shadow-sm">
-					<div className="flex items-center justify-between mb-4">
-						<h3 className="text-lg font-semibold">Analytics Overview</h3>
-						<select className="rounded-md border border-border bg-background px-3 py-1 text-sm">
-							<option>Last 7 days</option>
-							<option>Last 30 days</option>
-							<option>Last 3 months</option>
-						</select>
-					</div>
-					<div className="h-64 rounded-md bg-muted/30 flex items-center justify-center">
-						<div className="text-center">
-							<TrendingUp className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
-							<p className="text-sm text-muted-foreground">
-								Chart will be displayed here
-							</p>
-							<p className="text-xs text-muted-foreground">
-								Connect analytics library
-							</p>
-						</div>
-					</div>
-				</div> */}
-
-				{/* <div className="rounded-lg border bg-card p-6 shadow-sm">
-					<div className="flex items-center justify-between mb-4">
-						<h3 className="text-lg font-semibold">Recent Activity</h3>
-						<button className="text-sm text-primary hover:text-primary/80 transition-colors">
-							View All
-						</button>
-					</div>
-					<div className="space-y-4">
-						{recentActivities.map((activity) => (
-							<div key={activity.id} className="flex items-start gap-3">
-								<div
-									className={`rounded-full p-1 ${
-										activity.type === "user"
-											? "bg-purple-100"
-											: activity.type === "post"
-											? "bg-blue-100"
-											: activity.type === "report"
-											? "bg-red-100"
-											: "bg-yellow-100"
-									}`}
-								>
-									{activity.type === "user" && (
-										<Users className="h-3 w-3 text-purple-600" />
-									)}
-									{activity.type === "post" && (
-										<FileText className="h-3 w-3 text-blue-600" />
-									)}
-									{activity.type === "report" && (
-										<AlertCircle className="h-3 w-3 text-red-600" />
-									)}
-									{activity.type === "review" && (
-										<Clock className="h-3 w-3 text-yellow-600" />
-									)}
-								</div>
-								<div className="flex-1 min-w-0">
-									<p className="text-sm font-medium">{activity.action}</p>
-									<p className="text-xs text-muted-foreground">
-										{activity.user}
-									</p>
-								</div>
-								<span className="text-xs text-muted-foreground">
-									{activity.time}
-								</span>
-							</div>
-						))}
-					</div>
 				</div> */}
 			</div>
 		</div>

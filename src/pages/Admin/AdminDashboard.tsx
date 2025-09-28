@@ -12,6 +12,7 @@ import AdminDashboardView from "@/components/AdminDashboardView";
 import { useUserAuth } from "@/hooks/useUserAuth";
 import EditPost from "@/components/EditPost";
 import { usePostEditor } from "@/hooks/usePostEditor";
+import AIPostCreationList from "@/components/AIPostCreationList";
 
 const AdminDashboard: React.FC = () => {
 	const [activeView, setActiveView] = useState("Dashboard");
@@ -23,11 +24,20 @@ const AdminDashboard: React.FC = () => {
 		setActiveView("Edit Post");
 	};
 
+	if (!user) {
+		signout();
+	}
 	// Component mapping for different views
 	const renderActiveComponent = () => {
 		switch (activeView) {
 			case "Create Post":
-				return <CreatePost className="flex flex-1 flex-col gap-6 p-6" />;
+				return (
+					<div className="flex flex-1 flex-row gap-6 p-6">
+						<CreatePost className="flex flex-2 flex-col gap-6 p-6" />
+						<AIPostCreationList />
+					</div>
+				);
+
 			case "My Posts":
 				return (
 					<MyPosts
@@ -57,7 +67,12 @@ const AdminDashboard: React.FC = () => {
 				return <Profile className="flex flex-1 flex-col gap-6 p-6" />;
 			case "Dashboard":
 			default:
-				return <AdminDashboardView user={user || undefined} />;
+				return (
+					<AdminDashboardView
+						user={user || undefined}
+						setActiveView={setActiveView}
+					/>
+				);
 		}
 	};
 

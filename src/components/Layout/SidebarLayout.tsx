@@ -73,7 +73,7 @@ const SidebarLayout: React.FC<SidebarLayoutProps> = ({
 					<div className="flex items-center gap-2 px-4 py-2">
 						<Avatar className="h-8 w-8">
 							<AvatarImage src={user?.avatar} alt={user?.name || "User"} />
-							<AvatarFallback>{"CJ"}</AvatarFallback>
+							<AvatarFallback>{user?.name[0] || "U"}</AvatarFallback>
 						</Avatar>
 						<div className="grid flex-1 text-left text-sm leading-tight">
 							<span className="truncate font-semibold">
@@ -138,7 +138,7 @@ const SidebarLayout: React.FC<SidebarLayoutProps> = ({
 			</Sidebar>
 
 			<SidebarInset>
-				<header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+				<header className="flex h-16 shrink-0 items-center gap-2 border-b px-4 ">
 					<SidebarTrigger className="-ml-1 md:hidden" />
 					<Separator orientation="vertical" className="mr-2 h-4 md:hidden" />
 					<Breadcrumb>
@@ -155,8 +155,7 @@ const SidebarLayout: React.FC<SidebarLayoutProps> = ({
 
 					<ThemeToggle variant="icon" className="ml-auto" />
 				</header>
-
-				{children}
+				<div className="h-full py-4">{children}</div>
 			</SidebarInset>
 		</SidebarProvider>
 	);

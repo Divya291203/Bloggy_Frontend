@@ -13,11 +13,7 @@ export type userType = {
 export type CommentType = {
 	_id: string;
 	content: string;
-	postId: {
-		_id: string;
-		title: string;
-		slug: string;
-	};
+	postId: string;
 	userId: {
 		_id: string;
 		name: string;
@@ -29,7 +25,7 @@ export type CommentType = {
 	parentComment: string | null;
 	depth: number;
 	commentedAt: string;
-	replies: string[];
+	replies: CommentType[];
 	likes: string[];
 	numberOfLikes: number;
 	createdAt: string;
