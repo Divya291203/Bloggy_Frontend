@@ -2,6 +2,7 @@ import React, { createContext, useState, useEffect, useContext } from "react";
 import axiosInstance from "../utils/axiosInstance";
 import { API_PATHS } from "../utils/apiPaths";
 import { useNavigate } from "react-router-dom";
+
 type userType = {
 	_id: string;
 	name: string;
@@ -10,8 +11,8 @@ type userType = {
 	role: string;
 	bio: string;
 	token: string;
-	createdAt: string;
-	updatedAt: string;
+	createdAt?: string;
+	updatedAt?: string;
 };
 
 type userContextType = {
@@ -23,7 +24,11 @@ type userContextType = {
 
 export const UserContext = createContext<userContextType | null>(null);
 
-const UserProvider = ({ children }: { children: React.ReactNode }) => {
+type UserProviderProps = {
+	children: React.ReactNode;
+};
+
+const UserProvider = ({ children }: UserProviderProps) => {
 	const [user, setUser] = useState<userType | null>(null);
 	const [loading, setLoading] = useState<boolean>(true);
 	const navigate = useNavigate();

@@ -5,7 +5,6 @@ const uploadImage = async (imageFile: File) => {
 	const formData = new FormData();
 
 	console.log("imageFile", imageFile);
-	//append image to form data
 	formData.append("image", imageFile);
 
 	try {

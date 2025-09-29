@@ -9,11 +9,19 @@ import CommentList from "@/components/CommentList";
 import AuthorDashboardView from "@/components/AuthorDashboardView";
 import EditPost from "@/components/EditPost";
 import { usePostEditor } from "@/hooks/usePostEditor";
+import AIPostCreationList, {
+	type AIPostIdea,
+} from "@/components/AIPostCreationList";
 
 const AuthorDashboard: React.FC = () => {
 	const [activeView, setActiveView] = useState("Dashboard");
 	const { editingPostId, setEditingPostId } = usePostEditor();
 	const { user, signout } = useUserAuth();
+	const [idea, setIdea] = useState<AIPostIdea | null>(null);
+
+	const handleIdea = (idea: AIPostIdea) => {
+		setIdea(idea);
+	};
 
 	const handleEditPost = (postId: string) => {
 		setEditingPostId(postId);
@@ -23,7 +31,15 @@ const AuthorDashboard: React.FC = () => {
 	const renderActiveComponent = () => {
 		switch (activeView) {
 			case "Create Post":
-				return <CreatePost />;
+				return (
+					<div className="flex flex-1 flex-row gap-6 p-6">
+						<CreatePost
+							className="flex flex-2 flex-col gap-6 p-6"
+							idea={idea || null}
+						/>
+						<AIPostCreationList onIdea={handleIdea} />
+					</div>
+				);
 			case "My Posts":
 				return <MyPosts onEditPost={handleEditPost} />;
 			case "Comments":

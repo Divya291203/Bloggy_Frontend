@@ -12,12 +12,19 @@ import AdminDashboardView from "@/components/AdminDashboardView";
 import { useUserAuth } from "@/hooks/useUserAuth";
 import EditPost from "@/components/EditPost";
 import { usePostEditor } from "@/hooks/usePostEditor";
-import AIPostCreationList from "@/components/AIPostCreationList";
+import AIPostCreationList, {
+	type AIPostIdea,
+} from "@/components/AIPostCreationList";
 
 const AdminDashboard: React.FC = () => {
+	const [idea, setIdea] = useState<AIPostIdea | null>(null);
 	const [activeView, setActiveView] = useState("Dashboard");
 	const { editingPostId, setEditingPostId } = usePostEditor();
 	const { user, signout } = useUserAuth();
+
+	const handleIdea = (idea: AIPostIdea) => {
+		setIdea(idea);
+	};
 
 	const handleEditPost = (postId: string) => {
 		setEditingPostId(postId);
@@ -33,8 +40,11 @@ const AdminDashboard: React.FC = () => {
 			case "Create Post":
 				return (
 					<div className="flex flex-1 flex-row gap-6 p-6">
-						<CreatePost className="flex flex-2 flex-col gap-6 p-6" />
-						<AIPostCreationList />
+						<CreatePost
+							className="flex flex-2 flex-col gap-6 p-6"
+							idea={idea}
+						/>
+						<AIPostCreationList onIdea={handleIdea} />
 					</div>
 				);
 
@@ -67,12 +77,7 @@ const AdminDashboard: React.FC = () => {
 				return <Profile className="flex flex-1 flex-col gap-6 p-6" />;
 			case "Dashboard":
 			default:
-				return (
-					<AdminDashboardView
-						user={user || undefined}
-						setActiveView={setActiveView}
-					/>
-				);
+				return <AdminDashboardView user={user} setActiveView={setActiveView} />;
 		}
 	};
 

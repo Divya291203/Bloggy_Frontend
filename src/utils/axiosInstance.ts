@@ -13,19 +13,31 @@ const axiosInstance = axios.create({
 export const axiosInstanceWithFile = axios.create({
 	baseURL: BASE_URL,
 	timeout: 10000,
-	headers: {
-		"Content-Type": "multipart/form-data",
-	},
+	// Don't set Content-Type for FormData - let axios handle it automatically
 });
+
+//Request Interceptor for file uploads
+axiosInstanceWithFile.interceptors.request.use(
+	(req) => {
+		const accessToken = localStorage.getItem("token");
+		if (accessToken) {
+			req.headers.Authorization = `Bearer ${accessToken}`;
+		}
+		return req;
+	},
+	(error) => {
+		return Promise.reject(error);
+	}
+);
 
 //Request Interceptor
 axiosInstance.interceptors.request.use(
-	(config) => {
+	(req) => {
 		const accessToken = localStorage.getItem("token");
 		if (accessToken) {
-			config.headers.Authorization = `Bearer ${accessToken}`;
+			req.headers.Authorization = `Bearer ${accessToken}`;
 		}
-		return config;
+		return req;
 	},
 	(error) => {
 		return Promise.reject(error);
@@ -51,5 +63,12 @@ axiosInstance.interceptors.response.use(
 		return Promise.reject(error);
 	}
 );
+
+axios.get("http://localhost:5000/api/v1/post/my-posts", {
+	params: {
+		page: 1,
+		limit: 10,
+	},
+});
 
 export default axiosInstance;

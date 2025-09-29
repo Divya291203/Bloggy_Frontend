@@ -21,9 +21,9 @@ import CreatePost from "./components/CreatePost";
 
 function App() {
 	return (
-		<Router>
+		<Router >
 			<UserProvider>
-				<ThemeProvider>
+				<ThemeProvider >
 					<Routes>
 						{/* Auth Routes - No Navbar */}
 						<Route path="/login" element={<Login />} />

@@ -21,14 +21,16 @@ import {
 import { API_PATHS } from "@/utils/apiPaths";
 import axiosInstance from "@/utils/axiosInstance";
 
-interface AIPostIdea {
-	id: string;
+export interface AIPostIdea {
+	id?: string;
 	title: string;
 	description: string;
-	category: string;
-	difficulty: "Easy" | "Medium" | "Hard";
-	estimatedTime: string;
-	trending: boolean;
+	tags?: string[];
+	tone?: string;
+	category?: string;
+	difficulty?: "Easy" | "Medium" | "Hard";
+	estimatedTime?: string;
+	trending?: boolean;
 }
 
 const generateAIIdeas = async (topic: string) => {
@@ -43,9 +45,9 @@ const generateAIIdeas = async (topic: string) => {
 
 const AIPostCard: React.FC<{
 	idea: AIPostIdea;
-	onUse: (idea: AIPostIdea) => void;
-}> = ({ idea, onUse }) => {
-	const getDifficultyColor = (difficulty: string) => {
+	onIdea: (idea: AIPostIdea) => void;
+}> = ({ idea, onIdea }) => {
+	const getDifficultyColor = (difficulty?: string) => {
 		switch (difficulty) {
 			case "Easy":
 				return "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400";
@@ -58,6 +60,13 @@ const AIPostCard: React.FC<{
 		}
 	};
 
+	// Generate fallback values for missing properties
+	const displayCategory =
+		idea.category || (idea.tags && idea.tags[0]) || "General";
+	const displayDifficulty = idea.difficulty || "Medium";
+	const displayEstimatedTime = idea.estimatedTime || "5 min read";
+	const displayTrending = idea.trending || false;
+
 	return (
 		<Card className="group hover:shadow-lg transition-all duration-300 hover:scale-[1.02] border-border/50 hover:border-primary/30 bg-gradient-to-br from-card to-card/80">
 			<CardHeader className="pb-4">
@@ -66,7 +75,7 @@ const AIPostCard: React.FC<{
 						<div className="p-2 rounded-lg bg-primary/10 text-primary">
 							<Lightbulb className="h-4 w-4" />
 						</div>
-						{idea.trending && (
+						{displayTrending && (
 							<Badge
 								variant="secondary"
 								className="text-xs bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400"
@@ -78,9 +87,9 @@ const AIPostCard: React.FC<{
 					</div>
 					<Badge
 						variant="outline"
-						className={getDifficultyColor(idea.difficulty)}
+						className={getDifficultyColor(displayDifficulty)}
 					>
-						{idea.difficulty}
+						{displayDifficulty}
 					</Badge>
 				</div>
 				<CardTitle className="text-lg leading-tight group-hover:text-primary transition-colors">
@@ -96,11 +105,11 @@ const AIPostCard: React.FC<{
 					<div className="flex items-center gap-4">
 						<span className="flex items-center gap-1">
 							<Target className="h-3 w-3" />
-							{idea.category}
+							{displayCategory}
 						</span>
 						<span className="flex items-center gap-1">
 							<Clock className="h-3 w-3" />
-							{idea.estimatedTime}
+							{displayEstimatedTime}
 						</span>
 					</div>
 				</div>
@@ -108,7 +117,7 @@ const AIPostCard: React.FC<{
 				<div className="flex gap-2 pt-2">
 					<Button
 						size="sm"
-						onClick={() => onUse(idea)}
+						onClick={() => onIdea(idea)}
 						className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
 					>
 						<Edit className="h-3 w-3 mr-2" />
@@ -123,7 +132,11 @@ const AIPostCard: React.FC<{
 	);
 };
 
-const AIPostCreationList = () => {
+const AIPostCreationList = ({
+	onIdea,
+}: {
+	onIdea: (idea: AIPostIdea) => void;
+}) => {
 	const [topic, setTopic] = useState("");
 	const [isGenerating, setIsGenerating] = useState(false);
 	const [ideas, setIdeas] = useState<AIPostIdea[]>([]);
@@ -133,16 +146,29 @@ const AIPostCreationList = () => {
 		if (!topic.trim()) return;
 
 		setIsGenerating(true);
-		// Simulate API call delay
-		const result = await generateAIIdeas(topic);
-		setIdeas(result);
-		setHasGenerated(true);
-		setIsGenerating(false);
-	};
-
-	const handleUseIdea = (idea: AIPostIdea) => {
-		// This would typically populate the main post creation form
-		console.log("Using idea:", idea);
+		try {
+			const result = await generateAIIdeas(topic);
+			// Process the ideas to add missing properties and IDs
+			const processedIdeas = result.ideas.map(
+				(idea: Partial<AIPostIdea>, index: number): AIPostIdea => ({
+					title: idea.title || "",
+					description: idea.description || "",
+					id: idea.id || `idea-${Date.now()}-${index}`,
+					category: idea.category || (idea.tags && idea.tags[0]) || "General",
+					difficulty: idea.difficulty || "Medium",
+					estimatedTime: idea.estimatedTime || "5 min read",
+					trending: idea.trending || Math.random() > 0.7, // Random trending for demo
+					tags: idea.tags || [],
+					tone: idea.tone || "informative",
+				})
+			);
+			setIdeas(processedIdeas);
+			setHasGenerated(true);
+		} catch (error) {
+			console.error("Error generating ideas:", error);
+		} finally {
+			setIsGenerating(false);
+		}
 	};
 
 	return (
@@ -236,14 +262,14 @@ const AIPostCreationList = () => {
 			{/* Results */}
 			{hasGenerated && ideas.length > 0 && (
 				<>
+					<h2 className="text-lg font-semibold">Generated Ideas</h2>
 					<div className="flex items-center justify-between">
 						<div className="flex items-center gap-2">
-							<h2 className="text-lg font-semibold">Generated Ideas</h2>
 							<Badge
 								variant="secondary"
 								className="bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
 							>
-								{ideas.length} ideas
+								Total Ideas: {ideas.length}
 							</Badge>
 						</div>
 						<Button
@@ -266,7 +292,7 @@ const AIPostCreationList = () => {
 								className="animate-in slide-in-from-bottom-4 duration-500"
 								style={{ animationDelay: `${index * 150}ms` }}
 							>
-								<AIPostCard idea={idea} onUse={handleUseIdea} />
+								<AIPostCard idea={idea} onIdea={onIdea} />
 							</div>
 						))}
 					</div>

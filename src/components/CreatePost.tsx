@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
@@ -21,18 +21,20 @@ import PostImageUploader from "./PostImageUploader";
 import axiosInstance from "@/utils/axiosInstance";
 import { API_PATHS } from "@/utils/apiPaths";
 import uploadImage from "@/utils/uploadImage";
-
+import type { AIPostIdea } from "@/components/AIPostCreationList";
 interface CreatePostProps {
 	className?: string;
+	idea?: AIPostIdea | null;
 }
 
-const CreatePost: React.FC<CreatePostProps> = ({ className }) => {
+const CreatePost: React.FC<CreatePostProps> = ({ className, idea }) => {
 	const {
 		register,
 		handleSubmit,
 		control,
 		watch,
 		reset,
+		setValue,
 		formState: { errors, isSubmitting },
 	} = useForm<CreatePostFormData>({
 		resolver: zodResolver(createPostSchema),
@@ -45,6 +47,20 @@ const CreatePost: React.FC<CreatePostProps> = ({ className }) => {
 
 	// Watch values for real-time updates
 	const watchedContent = watch("content", "");
+
+	// Update form when idea changes
+	useEffect(() => {
+		if (idea) {
+			setValue("title", idea.title);
+			setValue("content", idea.description);
+			// Handle category safely - use tags[0] or default to empty string
+			const category =
+				idea.category?.toLowerCase() ||
+				(idea.tags && idea.tags[0]?.toLowerCase()) ||
+				"";
+			setValue("category", category);
+		}
+	}, [idea, setValue]);
 
 	const onSubmit = async (data: CreatePostFormData, isDraft = false) => {
 		let postImageUrl = "";

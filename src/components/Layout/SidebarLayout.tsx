@@ -72,8 +72,8 @@ const SidebarLayout: React.FC<SidebarLayoutProps> = ({
 				<SidebarHeader>
 					<div className="flex items-center gap-2 px-4 py-2">
 						<Avatar className="h-8 w-8">
-							<AvatarImage src={user?.avatar} alt={user?.name || "User"} />
-							<AvatarFallback>{user?.name[0] || "U"}</AvatarFallback>
+							<AvatarImage src={user?.avatar || ""} alt={user?.name || "User"} />
+							<AvatarFallback>{"CJ"}</AvatarFallback>
 						</Avatar>
 						<div className="grid flex-1 text-left text-sm leading-tight">
 							<span className="truncate font-semibold">

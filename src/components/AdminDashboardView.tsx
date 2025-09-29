@@ -19,7 +19,7 @@ import { API_PATHS } from "@/utils/apiPaths";
 import axiosInstance from "@/utils/axiosInstance";
 
 interface AdminDashboardViewProps {
-	user?: { name?: string };
+	user?: { name?: string } | null;
 	setActiveView: (view: string) => void;
 }
 
