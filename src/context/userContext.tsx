@@ -2,18 +2,8 @@ import React, { createContext, useState, useEffect, useContext } from "react";
 import axiosInstance from "../utils/axiosInstance";
 import { API_PATHS } from "../utils/apiPaths";
 import { useNavigate } from "react-router-dom";
+import { userType } from "../types/typeDef";
 
-type userType = {
-	_id: string;
-	name: string;
-	email: string;
-	avatar: string;
-	role: string;
-	bio: string;
-	token: string;
-	createdAt?: string;
-	updatedAt?: string;
-};
 
 type userContextType = {
 	user: userType | null;

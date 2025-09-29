@@ -13,7 +13,11 @@ export type userType = {
 export type CommentType = {
 	_id: string;
 	content: string;
-	postId: string;
+	postId: {
+		_id: string;
+		title: string;
+		slug: string;
+	};
 	userId: {
 		_id: string;
 		name: string;
