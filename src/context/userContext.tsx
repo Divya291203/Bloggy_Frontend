@@ -2,7 +2,7 @@ import React, { createContext, useState, useEffect, useContext } from "react";
 import axiosInstance from "../utils/axiosInstance";
 import { API_PATHS } from "../utils/apiPaths";
 import { useNavigate } from "react-router-dom";
-import { userType } from "../types/typeDef";
+import type { userType } from "../types/typeDef";
 
 
 type userContextType = {
